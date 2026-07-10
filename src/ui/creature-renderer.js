@@ -893,6 +893,11 @@ export class CreatureRenderer {
 
   render = (time) => {
     if (this.disposed) return;
+    if (this.frame != null && this.lastRenderTime != null && time - this.lastRenderTime < 32) {
+      this.frame = requestAnimationFrame(this.render);
+      return;
+    }
+    this.lastRenderTime = time;
     animateModel(this.stage.model, this.creature, this.reducedMotion ? 0 : time, this.dragRotation);
     this.renderer.render(this.stage.scene, this.stage.camera);
     if (this.frame != null && !this.reducedMotion) this.frame = requestAnimationFrame(this.render);

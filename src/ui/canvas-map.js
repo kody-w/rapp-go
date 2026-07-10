@@ -405,6 +405,13 @@ export class CanvasMap {
   }
 
   render = (time) => {
+    const obscured = document.hidden || this.canvas.offsetParent === null || Boolean(document.querySelector('dialog[open]'));
+    const frameInterval = obscured ? 90 : 32;
+    if (this.lastRenderTime != null && time - this.lastRenderTime < frameInterval) {
+      this.frame = requestAnimationFrame(this.render);
+      return;
+    }
+    this.lastRenderTime = time;
     this.updateCamera();
     for (const [id, object] of this.markerObjects) {
       const marker = object.userData.marker;
