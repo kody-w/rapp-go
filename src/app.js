@@ -514,6 +514,7 @@ async function captureMomentFromForm(event) {
       privateMemory: memory.privateMemory,
       customMoment: true
     };
+    form.reset();
     closeDialog($('capture-dialog'));
     openEncounter(spawn);
   } catch (error) {
