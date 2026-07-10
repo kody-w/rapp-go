@@ -1,36 +1,69 @@
-// sw.js — makes rapp·go an installable, offline-capable PWA (golive-brief §A.3).
-// Pattern: companion/sw.js. Scope is /rapp-go/ — §H.2's root sw.js premise was
-// stale (no root sw exists); the brief's documented fallback applies.
-// Bump CACHE on EVERY shell change. Never cache cross-origin here: map tiles
-// (IndexedDB rapp-explorer), Overpass and open-meteo own their own caching.
-const CACHE = 'rappgo-v1';
-const SHELL = ['./', 'index.html', 'catch.html', 'tilemap.js', 'spawn.js', 'catch.js', 'poi.js',
-  'onboard.js', 'lib/genome.js', 'lib/weather.js', 'lib/basket.js', 'lib/fauna.js', 'lib/nav.js',
-  'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
+const CACHE_NAME = 'rapp-go-v2.1.0';
+const APP_SHELL = [
+  './',
+  './index.html',
+  './styles.css',
+  './manifest.webmanifest',
+  './icon-180.png',
+  './icon-192.png',
+  './icon-512.png',
+  './vendor/three.module.js',
+  './vendor/three.core.js',
+  './src/app.js',
+  './src/data/species.js',
+  './src/game/catch.js',
+  './src/game/economy.js',
+  './src/game/spawns.js',
+  './src/companion/evolution.js',
+  './src/lib/creature.js',
+  './src/lib/geo.js',
+  './src/lib/moment.js',
+  './src/lib/rng.js',
+  './src/services/places.js',
+  './src/services/storage.js',
+  './src/services/weather.js',
+  './src/ui/canvas-map.js',
+  './src/ui/creature-renderer.js'
+];
 
-self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()).catch(() => {}));
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
-self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys()
-    .then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k))))
-    .then(() => self.clients.claim()));
+self.addEventListener('activate', (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
+      .then(() => self.clients.claim())
+  );
 });
 
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  if (url.origin !== location.origin) return;   // tiles/weather/Overpass pass through untouched
-  e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      try {
-        if (res && res.status === 200) {
-          const copy = res.clone();
-          caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-        }
-      } catch (_) {}
-      return res;
-    }).catch(() => caches.match('index.html')))
+self.addEventListener('fetch', (event) => {
+  const request = event.request;
+  if (request.method !== 'GET') return;
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
+          return response;
+        })
+        .catch(() => caches.match('./index.html'))
+    );
+    return;
+  }
+
+  event.respondWith(
+    caches.match(request).then((cached) => {
+      const update = fetch(request).then((response) => {
+        if (response.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, response.clone()));
+        return response;
+      });
+      return cached || update;
+    })
   );
 });

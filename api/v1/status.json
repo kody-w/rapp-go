@@ -1,9 +1,10 @@
 {
-  "schema": "rapp-go-status/1.0",
-  "generated": "2026-07-07T02:12:32Z",
+  "schema": "rapp-go-status/2.0",
+  "version": "2.1.0",
   "ok": true,
-  "summary": {
-    "rooms": 2,
-    "modules": 9
-  }
+  "deployment": "github-pages",
+  "modes": ["live-location", "fixed-location", "deterministic-demo", "multimodal-moment", "companion-evolution"],
+  "storage": ["indexeddb", "localstorage"],
+  "backend": false,
+  "species": 151
 }
